@@ -1,0 +1,27 @@
+{
+  "test1": {
+    "success": true,
+    "status_code": 200,
+    "race_ids_found": 1,
+    "can_use_requests": true
+  },
+  "test2": {
+    "success": true,
+    "status_code": 200,
+    "horse_ids_found": 30,
+    "jockey_ids_found": 14,
+    "can_use_requests": true
+  },
+  "test3": {
+    "success": true,
+    "status_code": 200,
+    "tables_found": 1,
+    "can_use_requests": true
+  },
+  "test4": {
+    "success": true,
+    "status_code": 200,
+    "tables_found": 5,
+    "can_use_requests": true
+  }
+}
