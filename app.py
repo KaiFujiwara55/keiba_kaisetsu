@@ -200,13 +200,12 @@ def main():
     # Date selection
     st.subheader("1. レース日を選択")
 
-    # Default to today or next Saturday
+    # Default to today
     today = datetime.now()
-    next_saturday = today + timedelta(days=(5 - today.weekday()) % 7)
 
     race_date = st.date_input(
         "レース日",
-        value=next_saturday,
+        value=today,
         min_value=today - timedelta(days=30),
         max_value=today + timedelta(days=30)
     )
