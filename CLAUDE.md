@@ -1,6 +1,12 @@
 # 会話方針
 日本語で会話する
 
+# Python実行環境
+Python実行時は必ずvenv環境をアクティベートしてから実行すること。
+```bash
+source venv/bin/activate && python <スクリプト名>
+```
+
 <!-- OPENSPEC:START -->
 # OpenSpec Instructions
 

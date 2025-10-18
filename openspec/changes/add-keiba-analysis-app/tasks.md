@@ -1,17 +1,17 @@
 # Implementation Tasks
 
 ## 1. Project Setup
-- [ ] 1.1 Create project directory structure
-- [ ] 1.2 Initialize Git repository
-- [ ] 1.3 Create virtual environment
-- [ ] 1.4 Create requirements.txt with dependencies:
+- [x] 1.1 Create project directory structure
+- [x] 1.2 Initialize Git repository
+- [x] 1.3 Create virtual environment
+- [x] 1.4 Create requirements.txt with dependencies:
   - streamlit
   - requests
   - beautifulsoup4
   - boto3 (DynamoDB)
   - openai (GPT-5)
-- [ ] 1.5 Create .env.example file with required environment variables
-- [ ] 1.6 Create .gitignore file (include .env, __pycache__, venv/)
+- [x] 1.5 Create .env.example file with required environment variables
+- [x] 1.6 Create .gitignore file (include .env, __pycache__, venv/)
 
 ## 2. DynamoDB Setup
 - [ ] 2.1 Create DynamoDB table `keiba_data` via AWS Console or CLI
@@ -21,8 +21,8 @@
 - [ ] 2.5 Test DynamoDB connection from local environment
 
 ## 3. Scraper Module - Base
-- [ ] 3.1 Create `scraper/` directory
-- [ ] 3.2 Implement `scraper/base.py` with BaseScraper class
+- [x] 3.1 Create `scraper/` directory
+- [x] 3.2 Implement `scraper/base.py` with BaseScraper class
   - HTTP request wrapper with retry logic
   - User-Agent configuration
   - Encoding detection
@@ -32,15 +32,15 @@
 - [ ] 3.4 Test with actual netkeiba URLs
 
 ## 4. Scraper Module - Race
-- [ ] 4.1 Implement `scraper/race.py` with RaceScraper class
-- [ ] 4.2 Implement fetch_races_by_date() method
+- [x] 4.1 Implement `scraper/race.py` with RaceScraper class
+- [x] 4.2 Implement fetch_races_by_date() method
   - Fetch race list page
   - Extract race_ids with track names and race numbers
   - Return structured data
-- [ ] 4.3 Implement get_race_id() method
+- [x] 4.3 Implement get_race_id() method
   - Filter races by track name and race number
   - Return specific race_id
-- [ ] 4.4 Implement fetch_race_details() method
+- [x] 4.4 Implement fetch_race_details() method
   - Fetch race details page
   - Extract distance, track type
   - Extract horse list with horse_ids and jockey_ids
@@ -49,14 +49,14 @@
 - [ ] 4.6 Test with actual race URLs from different dates
 
 ## 5. Scraper Module - Horse
-- [ ] 5.1 Implement `scraper/horse.py` with HorseScraper class
-- [ ] 5.2 Implement fetch_horse_results() method
+- [x] 5.1 Implement `scraper/horse.py` with HorseScraper class
+- [x] 5.2 Implement fetch_horse_results() method
   - Fetch horse detail page
   - Extract past race results table
   - Parse race dates, positions, times, distances
   - Calculate days since last race
   - Return structured data
-- [ ] 5.3 Implement fetch_parent_horses() method
+- [x] 5.3 Implement fetch_parent_horses() method
   - Extract parent horse IDs
   - Fetch sire and dam data
   - Extract earnings and career records
@@ -65,8 +65,8 @@
 - [ ] 5.5 Test with actual horse IDs
 
 ## 6. Scraper Module - Jockey
-- [ ] 6.1 Implement `scraper/jockey.py` with JockeyScraper class
-- [ ] 6.2 Implement fetch_jockey_stats() method
+- [x] 6.1 Implement `scraper/jockey.py` with JockeyScraper class
+- [x] 6.2 Implement fetch_jockey_stats() method
   - Fetch jockey detail page
   - Identify statistics table
   - Extract recent 5-year win rate and place rate
@@ -76,67 +76,67 @@
 - [ ] 6.4 Test with actual jockey IDs
 
 ## 7. Cache Module
-- [ ] 7.1 Create `cache/` directory
-- [ ] 7.2 Implement `cache/dynamodb.py` with DynamoDBCache class
-- [ ] 7.3 Implement get() method (fetch from cache)
-- [ ] 7.4 Implement set() method (store with TTL)
-- [ ] 7.5 Implement cache key generation for different data types
-- [ ] 7.6 Add error handling for DynamoDB failures
+- [x] 7.1 Create `cache/` directory
+- [x] 7.2 Implement `cache/dynamodb.py` with DynamoDBCache class
+- [x] 7.3 Implement get() method (fetch from cache)
+- [x] 7.4 Implement set() method (store with TTL)
+- [x] 7.5 Implement cache key generation for different data types
+- [x] 7.6 Add error handling for DynamoDB failures
 - [ ] 7.7 Write unit tests with mocked boto3
 - [ ] 7.8 Integration test with actual DynamoDB table
 
 ## 8. LLM Analyzer Module
-- [ ] 8.1 Create `analyzer/` directory
-- [ ] 8.2 Create `analyzer/prompts.py` with prompt templates
+- [x] 8.1 Create `analyzer/` directory
+- [x] 8.2 Create `analyzer/prompts.py` with prompt templates
   - System prompt
   - User prompt template
   - Data formatting helpers
-- [ ] 8.3 Implement `analyzer/gpt_analyzer.py` with GPTAnalyzer class
-- [ ] 8.4 Implement analyze_horses() method
+- [x] 8.3 Implement `analyzer/gpt_analyzer.py` with GPTAnalyzer class
+- [x] 8.4 Implement analyze_horses() method
   - Format race data
   - Construct prompts
   - Call GPT-5 API
   - Parse response
   - Return structured analysis (individual, comparison, ranking)
-- [ ] 8.5 Implement token counting and logging
+- [x] 8.5 Implement token counting and logging
 - [ ] 8.6 Add retry logic for API errors
 - [ ] 8.7 Write unit tests with mocked OpenAI API
 - [ ] 8.8 Test with actual GPT-5 API (small dataset)
 
 ## 9. Streamlit UI - Authentication
-- [ ] 9.1 Create `app.py` as main Streamlit application
-- [ ] 9.2 Implement authentication check using session state
-- [ ] 9.3 Create login UI with password input
-- [ ] 9.4 Validate password against environment variable
+- [x] 9.1 Create `app.py` as main Streamlit application
+- [x] 9.2 Implement authentication check using session state
+- [x] 9.3 Create login UI with password input
+- [x] 9.4 Validate password against environment variable
 - [ ] 9.5 Test authentication flow
 
 ## 10. Streamlit UI - Race Selection
-- [ ] 10.1 Implement race date input (text input or date picker)
-- [ ] 10.2 Fetch available races when date is selected
-- [ ] 10.3 Populate track name dropdown from available races
-- [ ] 10.4 Populate race number dropdown when track is selected
-- [ ] 10.5 Display loading spinner during data fetching
-- [ ] 10.6 Add error handling for invalid dates or no races found
+- [x] 10.1 Implement race date input (text input or date picker)
+- [x] 10.2 Fetch available races when date is selected
+- [x] 10.3 Populate track name dropdown from available races
+- [x] 10.4 Populate race number dropdown when track is selected
+- [x] 10.5 Display loading spinner during data fetching
+- [x] 10.6 Add error handling for invalid dates or no races found
 
 ## 11. Streamlit UI - Analysis Trigger
-- [ ] 11.1 Add custom prompt text area (optional)
-- [ ] 11.2 Add "解析開始" button
-- [ ] 11.3 Validate selections before starting analysis
-- [ ] 11.4 Show progress indicator with steps:
+- [x] 11.1 Add custom prompt text area (optional)
+- [x] 11.2 Add "解析開始" button
+- [x] 11.3 Validate selections before starting analysis
+- [x] 11.4 Show progress indicator with steps:
   - データ取得中...
   - LLM解析中...
 - [ ] 11.5 Display estimated time remaining
 
 ## 12. Streamlit UI - Results Display
-- [ ] 12.1 Create tabbed interface with 3 tabs
-- [ ] 12.2 Tab 1: Display individual horse analysis
+- [x] 12.1 Create tabbed interface with 3 tabs
+- [x] 12.2 Tab 1: Display individual horse analysis
   - Show each horse's name
   - Display strengths and weaknesses
   - Use expandable sections for mobile readability
-- [ ] 12.3 Tab 2: Display comparison analysis
+- [x] 12.3 Tab 2: Display comparison analysis
   - Show head-to-head comparisons
   - Use collapsible sections
-- [ ] 12.4 Tab 3: Display recommendation ranking
+- [x] 12.4 Tab 3: Display recommendation ranking
   - Show top 5 horses in ranked order
   - Display reasoning for each
 - [ ] 12.5 Ensure mobile responsiveness (test on phone)
@@ -151,11 +151,11 @@
 - [ ] 13.6 Test on mobile device (iOS/Android)
 
 ## 14. Docker Configuration
-- [ ] 14.1 Create Dockerfile
+- [x] 14.1 Create Dockerfile
 - [ ] 14.2 Build Docker image locally
 - [ ] 14.3 Test running container locally
-- [ ] 14.4 Optimize image size (use slim base image)
-- [ ] 14.5 Add healthcheck endpoint
+- [x] 14.4 Optimize image size (use slim base image)
+- [x] 14.5 Add healthcheck endpoint
 
 ## 15. AWS Deployment
 - [ ] 15.1 Create ECR repository
@@ -171,15 +171,15 @@
 - [ ] 15.7 Deploy and test
 
 ## 16. Documentation
-- [ ] 16.1 Write README.md with:
+- [x] 16.1 Write README.md with:
   - Project overview
   - Setup instructions
   - Environment variables
   - Running locally
   - Deployment guide
-- [ ] 16.2 Document API costs and usage
-- [ ] 16.3 Create troubleshooting guide
-- [ ] 16.4 Document known limitations
+- [x] 16.2 Document API costs and usage
+- [x] 16.3 Create troubleshooting guide
+- [x] 16.4 Document known limitations
 
 ## 17. Final Testing & Launch
 - [ ] 17.1 Test deployed application end-to-end
