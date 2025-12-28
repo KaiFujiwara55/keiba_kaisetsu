@@ -293,6 +293,7 @@ def main():
             if cached_analysis:
                 # Use cached result
                 analysis_result = cached_analysis
+                st.session_state.result_displayed = False  # Will be displayed below
             else:
                 # Perform new analysis
                 if not force_new_analysis:
@@ -309,8 +310,25 @@ def main():
 
                 st.success(f"データ取得完了: {len(race_data['horses'])}頭")
 
-                with st.spinner(f"{analyzer_name}で解析中... (30秒〜1分程度かかります)"):
-                    analysis_result = analyzer.analyze_horses(race_data, custom_prompt)
+                st.info(f"{analyzer_name}で解析中...")
+
+                # Create placeholder for streaming output
+                st.subheader("6. 解析結果")
+                result_placeholder = st.empty()
+                accumulated_text = ""
+                analysis_result = None
+
+                # Stream the response
+                for chunk in analyzer.analyze_horses_stream(race_data, custom_prompt):
+                    if chunk['type'] == 'chunk':
+                        accumulated_text += chunk['content']
+                        result_placeholder.markdown(accumulated_text)
+                    elif chunk['type'] == 'final':
+                        analysis_result = chunk
+                        del analysis_result['type']
+                    elif chunk['type'] == 'error':
+                        st.error(f"解析に失敗しました: {chunk.get('error', '不明なエラー')}")
+                        st.stop()
 
                 if not analysis_result:
                     st.error("解析に失敗しました")
@@ -322,6 +340,9 @@ def main():
 
             # Store results in session
             st.session_state.analysis_result = analysis_result
+            # Only mark as displayed if streamed (not from cache)
+            if not cached_analysis:
+                st.session_state.result_displayed = True
 
             # Display token usage and cost
             tokens = analysis_result.get('tokens_used', {})
@@ -335,8 +356,8 @@ def main():
             トークン使用量: 入力 {tokens.get('input', 0):,}, 出力 {tokens.get('output', 0):,}, 合計 {tokens.get('total', 0):,}
             """)
 
-    # Display results
-    if 'analysis_result' in st.session_state:
+    # Display results (only if not already displayed via streaming or cache)
+    if 'analysis_result' in st.session_state and not st.session_state.get('result_displayed', False):
         st.subheader("6. 解析結果")
 
         result = st.session_state.analysis_result

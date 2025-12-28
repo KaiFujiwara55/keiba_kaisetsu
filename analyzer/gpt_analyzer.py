@@ -5,7 +5,7 @@ Handles LLM interaction and response parsing.
 
 import os
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, Generator
 from openai import OpenAI
 from .prompts import SYSTEM_PROMPT, create_user_prompt
 
@@ -43,21 +43,19 @@ class GPTAnalyzer:
         self.reasoning_effort = os.getenv('GPT5_REASONING_EFFORT', 'medium')
         self.temperature = 0.7
 
-    def analyze_horses(self, race_data: Dict, custom_prompt: str = "") -> Optional[Dict]:
+    def analyze_horses_stream(self, race_data: Dict, custom_prompt: str = "") -> Generator[Dict, None, None]:
         """
-        Analyze horses using GPT-5
+        Analyze horses using GPT-5 with streaming
 
         Args:
             race_data: Dictionary containing race and horse information
             custom_prompt: Optional custom user instructions
 
-        Returns:
+        Yields:
             Dictionary containing:
-            - raw_response: str - Full GPT-5 response
-            - individual_analysis: str - Individual horse analysis section
-            - comparison: str - Horse comparison section
-            - ranking: str - Ranking section
-            - tokens_used: Dict - Token usage information
+            - type: 'chunk' or 'final'
+            - content: str - Text chunk (for type='chunk')
+            - For type='final': full result with tokens_used, cost_usd, etc.
         """
         # Create prompt
         user_prompt = create_user_prompt(race_data, custom_prompt)
@@ -71,9 +69,12 @@ class GPTAnalyzer:
 
         try:
             start_time = time.time()
+            accumulated_text = ""
+            prompt_tokens = 0
+            completion_tokens = 0
 
-            # Call GPT-5 API
-            response = self.client.chat.completions.create(
+            # Call GPT-5 API with streaming
+            stream = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
@@ -81,35 +82,49 @@ class GPTAnalyzer:
                 ],
                 temperature=self.temperature,
                 max_completion_tokens=self.max_output_tokens,
-                reasoning_effort=self.reasoning_effort
+                reasoning_effort=self.reasoning_effort,
+                stream=True,
+                stream_options={"include_usage": True}
             )
+
+            for chunk in stream:
+                # Check for content
+                if chunk.choices and len(chunk.choices) > 0:
+                    delta = chunk.choices[0].delta
+                    if delta and delta.content:
+                        accumulated_text += delta.content
+                        yield {'type': 'chunk', 'content': delta.content}
+
+                # Check for usage info (comes in last chunk)
+                if hasattr(chunk, 'usage') and chunk.usage:
+                    prompt_tokens = chunk.usage.prompt_tokens
+                    completion_tokens = chunk.usage.completion_tokens
 
             elapsed_time = time.time() - start_time
 
-            # Extract response
-            raw_response = response.choices[0].message.content
-
             # Log token usage
-            usage = response.usage
-            print(f"Token usage - Input: {usage.prompt_tokens}, Output: {usage.completion_tokens}, Total: {usage.total_tokens}")
+            total_tokens = prompt_tokens + completion_tokens
+            print(f"Token usage - Input: {prompt_tokens}, Output: {completion_tokens}, Total: {total_tokens}")
             print(f"Response time: {elapsed_time:.2f}s")
 
             # Calculate cost
-            cost_usd = self.calculate_cost(usage.prompt_tokens, usage.completion_tokens)
+            cost_usd = self.calculate_cost(prompt_tokens, completion_tokens)
             print(f"Estimated cost: ${cost_usd:.4f}")
 
             # Parse response into sections
-            parsed = self._parse_response(raw_response)
+            parsed = self._parse_response(accumulated_text)
 
-            return {
-                'raw_response': raw_response,
+            # Yield final result
+            yield {
+                'type': 'final',
+                'raw_response': accumulated_text,
                 'individual_analysis': parsed.get('individual', ''),
                 'comparison': parsed.get('comparison', ''),
                 'ranking': parsed.get('ranking', ''),
                 'tokens_used': {
-                    'input': usage.prompt_tokens,
-                    'output': usage.completion_tokens,
-                    'total': usage.total_tokens
+                    'input': prompt_tokens,
+                    'output': completion_tokens,
+                    'total': total_tokens
                 },
                 'cost_usd': cost_usd,
                 'response_time': elapsed_time
@@ -117,7 +132,32 @@ class GPTAnalyzer:
 
         except Exception as e:
             print(f"Error calling GPT-5 API: {e}")
-            return None
+            yield {'type': 'error', 'error': str(e)}
+
+    def analyze_horses(self, race_data: Dict, custom_prompt: str = "") -> Optional[Dict]:
+        """
+        Analyze horses using GPT-5 (non-streaming, for compatibility)
+
+        Args:
+            race_data: Dictionary containing race and horse information
+            custom_prompt: Optional custom user instructions
+
+        Returns:
+            Dictionary containing:
+            - raw_response: str - Full GPT-5 response
+            - individual_analysis: str - Individual horse analysis section
+            - comparison: str - Horse comparison section
+            - ranking: str - Ranking section
+            - tokens_used: Dict - Token usage information
+        """
+        result = None
+        for chunk in self.analyze_horses_stream(race_data, custom_prompt):
+            if chunk['type'] == 'final':
+                result = chunk
+                del result['type']
+            elif chunk['type'] == 'error':
+                return None
+        return result
 
     def _parse_response(self, response: str) -> Dict[str, str]:
         """

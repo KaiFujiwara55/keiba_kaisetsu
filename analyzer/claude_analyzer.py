@@ -5,7 +5,7 @@ Handles LLM interaction and response parsing.
 
 import os
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, Generator
 from anthropic import Anthropic
 from .prompts import SYSTEM_PROMPT, create_user_prompt
 
@@ -41,9 +41,88 @@ class ClaudeAnalyzer:
         self.max_tokens = int(os.getenv('CLAUDE_MAX_TOKENS', '8000'))
         self.temperature = float(os.getenv('CLAUDE_TEMPERATURE', '0.7'))
 
+    def analyze_horses_stream(self, race_data: Dict, custom_prompt: str = "") -> Generator[Dict, None, None]:
+        """
+        Analyze horses using Claude 4.5 with streaming
+
+        Args:
+            race_data: Dictionary containing race and horse information
+            custom_prompt: Optional custom user instructions
+
+        Yields:
+            Dictionary containing:
+            - type: 'chunk' or 'final'
+            - content: str - Text chunk (for type='chunk')
+            - For type='final': full result with tokens_used, cost_usd, etc.
+        """
+        # Create prompt
+        user_prompt = create_user_prompt(race_data, custom_prompt)
+
+        # Log token estimate
+        estimated_tokens = self._estimate_tokens(user_prompt)
+        print(f"Estimated input tokens: {estimated_tokens}")
+
+        try:
+            start_time = time.time()
+            accumulated_text = ""
+            input_tokens = 0
+            output_tokens = 0
+
+            # Call Claude API with streaming
+            with self.client.messages.stream(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+                system=SYSTEM_PROMPT,
+                messages=[
+                    {"role": "user", "content": user_prompt}
+                ]
+            ) as stream:
+                for text in stream.text_stream:
+                    accumulated_text += text
+                    yield {'type': 'chunk', 'content': text}
+
+                # Get final message for usage info
+                final_message = stream.get_final_message()
+                input_tokens = final_message.usage.input_tokens
+                output_tokens = final_message.usage.output_tokens
+
+            elapsed_time = time.time() - start_time
+
+            # Log token usage
+            print(f"Token usage - Input: {input_tokens}, Output: {output_tokens}, Total: {input_tokens + output_tokens}")
+            print(f"Response time: {elapsed_time:.2f}s")
+
+            # Calculate cost
+            cost_usd = self.calculate_cost(input_tokens, output_tokens)
+            print(f"Estimated cost: ${cost_usd:.4f}")
+
+            # Parse response into sections
+            parsed = self._parse_response(accumulated_text)
+
+            # Yield final result
+            yield {
+                'type': 'final',
+                'raw_response': accumulated_text,
+                'individual_analysis': parsed.get('individual', ''),
+                'comparison': parsed.get('comparison', ''),
+                'ranking': parsed.get('ranking', ''),
+                'tokens_used': {
+                    'input': input_tokens,
+                    'output': output_tokens,
+                    'total': input_tokens + output_tokens
+                },
+                'cost_usd': cost_usd,
+                'response_time': elapsed_time
+            }
+
+        except Exception as e:
+            print(f"Error calling Claude API: {e}")
+            yield {'type': 'error', 'error': str(e)}
+
     def analyze_horses(self, race_data: Dict, custom_prompt: str = "") -> Optional[Dict]:
         """
-        Analyze horses using Claude 4.5
+        Analyze horses using Claude 4.5 (non-streaming, for compatibility)
 
         Args:
             race_data: Dictionary containing race and horse information
@@ -57,61 +136,14 @@ class ClaudeAnalyzer:
             - ranking: str - Ranking section
             - tokens_used: Dict - Token usage information
         """
-        # Create prompt
-        user_prompt = create_user_prompt(race_data, custom_prompt)
-
-        # Log token estimate
-        estimated_tokens = self._estimate_tokens(user_prompt)
-        print(f"Estimated input tokens: {estimated_tokens}")
-
-        try:
-            start_time = time.time()
-
-            # Call Claude API
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-                system=SYSTEM_PROMPT,
-                messages=[
-                    {"role": "user", "content": user_prompt}
-                ]
-            )
-
-            elapsed_time = time.time() - start_time
-
-            # Extract response
-            raw_response = response.content[0].text
-
-            # Log token usage
-            usage = response.usage
-            print(f"Token usage - Input: {usage.input_tokens}, Output: {usage.output_tokens}, Total: {usage.input_tokens + usage.output_tokens}")
-            print(f"Response time: {elapsed_time:.2f}s")
-
-            # Calculate cost
-            cost_usd = self.calculate_cost(usage.input_tokens, usage.output_tokens)
-            print(f"Estimated cost: ${cost_usd:.4f}")
-
-            # Parse response into sections
-            parsed = self._parse_response(raw_response)
-
-            return {
-                'raw_response': raw_response,
-                'individual_analysis': parsed.get('individual', ''),
-                'comparison': parsed.get('comparison', ''),
-                'ranking': parsed.get('ranking', ''),
-                'tokens_used': {
-                    'input': usage.input_tokens,
-                    'output': usage.output_tokens,
-                    'total': usage.input_tokens + usage.output_tokens
-                },
-                'cost_usd': cost_usd,
-                'response_time': elapsed_time
-            }
-
-        except Exception as e:
-            print(f"Error calling Claude API: {e}")
-            return None
+        result = None
+        for chunk in self.analyze_horses_stream(race_data, custom_prompt):
+            if chunk['type'] == 'final':
+                result = chunk
+                del result['type']
+            elif chunk['type'] == 'error':
+                return None
+        return result
 
     def _parse_response(self, response: str) -> Dict[str, str]:
         """
